@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Konditsioner modellari katalogi</title>
+<style>
+  :root {
+    --ink: #0b1f33;
+    --ink-2: #41556a;
+    --paper: #f3f1ec;
+    --card: #ffffff;
+    --line: #dcd8cf;
+    --inv: #0f8a7a;
+    --onoff: #d9692b;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.5; }
+  :focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  button, input { font: inherit; }
+
+  .wrap { width: min(1200px, 92%); margin: 0 auto; }
+
+  /* Opening block: numbers first, then the question */
+  .opening { padding: 56px 0 28px; border-bottom: 1px solid var(--line); }
+  .opening h1 {
+    font-family: var(--serif); font-weight: 400; font-size: clamp(38px, 6vw, 72px);
+    line-height: 1.02; letter-spacing: -.02em; margin: 0 0 18px; max-width: 14ch;
+  }
+  .opening p { color: var(--ink-2); max-width: 52ch; margin: 0 0 28px; }
+  .tally { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border-top: 2px solid var(--ink); }
+  .tally div { padding: 14px 18px 0 0; }
+  .tally strong { display: block; font-family: var(--serif); font-weight: 400; font-size: 44px; line-height: 1; }
+  .tally span { font-size: 14px; color: var(--ink-2); }
+  .split { margin-top: 22px; height: 12px; display: flex; border-radius: 2px; overflow: hidden; background: var(--line); }
+  .split i { display: block; height: 100%; }
+  .legend { display: flex; gap: 20px; font-size: 14px; color: var(--ink-2); margin-top: 10px; }
+  .legend b { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+  /* Filters */
+  .filters { position: sticky; top: 0; z-index: 5; background: var(--paper); padding: 18px 0; border-bottom: 1px solid var(--line); }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .search {
+    flex: 1 1 260px; min-width: 220px; padding: 12px 14px; border: 1px solid var(--ink); background: var(--card);
+    border-radius: 2px; font-family: var(--mono); font-size: 15px;
+  }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip, .seg button {
+    background: transparent; border: 1px solid var(--ink); color: var(--ink); padding: 9px 13px;
+    border-radius: 999px; cursor: pointer; font-size: 14px;
+  }
+  .chip[aria-pressed="true"], .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .seg { display: flex; border: 1px solid var(--ink); border-radius: 999px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; }
+  .meta { font-size: 14px; color: var(--ink-2); margin: 16px 0 0; }
+
+  /* Model grid: each card is a sheet of spec, not a generic tile */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; padding: 22px 0 80px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 18px 18px 16px;
+    text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 10px; color: inherit;
+    border-top: 6px solid var(--onoff);
+  }
+  .card.inv { border-top-color: var(--inv); }
+  .card:hover { border-color: var(--ink); }
+  .card .no { font-family: var(--mono); font-size: 12px; color: var(--ink-2); display: flex; justify-content: space-between; }
+  .card h3 { font-family: var(--serif); font-weight: 400; font-size: 27px; line-height: 1.1; margin: 0; }
+  .card .comp { font-size: 14px; color: var(--ink-2); }
+  .card .nums { display: flex; gap: 14px; margin-top: auto; padding-top: 10px; border-top: 1px dashed var(--line); }
+  .card .nums div { font-size: 12px; color: var(--ink-2); }
+  .card .nums strong { display: block; font-family: var(--mono); font-size: 17px; color: var(--ink); font-weight: 500; }
+  .tag { font-size: 12px; font-family: var(--mono); padding: 2px 7px; border-radius: 2px; color: #fff; background: var(--onoff); }
+  .tag.inv { background: var(--inv); }
+  .empty { grid-column: 1 / -1; padding: 40px 0; color: var(--ink-2); }
+
+  /* Detail sheet */
+  dialog {
+    border: 0; padding: 0; width: min(760px, 94vw); max-height: 90vh; background: var(--paper); color: var(--ink);
+    border-radius: 4px; box-shadow: 0 30px 80px rgba(11,31,51,.35);
+  }
+  dialog::backdrop { background: rgba(11,31,51,.55); }
+  .sheet { padding: 28px 30px 30px; overflow: auto; max-height: 90vh; }
+  .sheet header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+  .sheet h2 { font-family: var(--serif); font-weight: 400; font-size: 40px; line-height: 1.05; margin: 0 0 6px; }
+  .sheet .sub { color: var(--ink-2); font-size: 15px; margin: 0 0 18px; }
+  .close { background: var(--ink); color: var(--paper); border: 0; border-radius: 2px; padding: 8px 14px; cursor: pointer; }
+  .group { margin-top: 22px; }
+  .group h4 { margin: 0 0 6px; font-size: 13px; font-family: var(--mono); letter-spacing: .02em; color: var(--ink-2); font-weight: 500; }
+  dl { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; margin: 0; }
+  dl div { padding: 9px 0; border-bottom: 1px solid var(--line); }
+  dt { font-size: 13px; color: var(--ink-2); }
+  dd { margin: 2px 0 0; font-family: var(--mono); font-size: 15px; word-break: break-word; }
+
+  @media (max-width: 700px) {
+    .tally { grid-template-columns: 1fr 1fr; }
+    .tally div { padding-bottom: 14px; }
+    dl { grid-template-columns: 1fr; }
+    .sheet h2 { font-size: 30px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap opening">
+  <h1>Har bir modelning ichki sirlari bir varaqda.</h1>
+  <p>Kompressor, freon, bosim relelari va trubka o'lchamlari. Model nomini yozing yoki turini tanlang, kartochkani bosib to'liq ma'lumotni ko'ring.</p>
+  <div class="tally" id="tally"></div>
+  <div class="split" id="split" aria-hidden="true"></div>
+  <div class="legend">
+    <span><b style="background:var(--inv)"></b>Inverter (tezligi o'zgaruvchan)</span>
+    <span><b style="background:var(--onoff)"></b>On/off (to'liq quvvat)</span>
+  </div>
+</div>
+
+<div class="filters">
+  <div class="wrap">
+    <div class="row">
+      <input class="search" id="q" type="search" placeholder="Model qidirish, masalan: STA1-F48" aria-label="Model qidirish">
+      <div class="seg" role="group" aria-label="Ishlash turi" id="seg">
+        <button data-v="all" aria-pressed="true">Hammasi</button>
+        <button data-v="Inverter" aria-pressed="false">Inverter</button>
+        <button data-v="On/off" aria-pressed="false">On/off</button>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div class="chips" id="chips"></div>
+    </div>
+    <p class="meta" id="meta"></p>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="grid" id="grid"></div>
+</main>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <div class="sheet" id="sheet"></div>
+</dialog>
+
+<script>
+const DATA = [{"no": 1, "type": "Ustunbop", "model": "STL1-F24BE Everest", "compressor": "SANYO C-6RZ146H3BAF", "speed": "Inverter", "freon": "1500", "capacitor": "Mavjud emas", "motor": "YDK60-6H", "gasValve": "Ø6,35mm Ø12,7mm", "capillary": "(∅2,9*∅1,9*700) (∅2,4*∅1,4*200)", "valve4": "\"DSF-9 R410A\"", "valveCoil": "DXQ-1287 (123000800074)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": {"liquid": "6,35x0,65мм L=4000мм", "liquidArt": "323040200011", "gas": "12,7х0,71мм L=4000мм", "gasArt": "330000200061"}, "shassiArt": "323180500969", "pipeArt": "323150200086"}, {"no": 2, "type": "Ustunbop", "model": "STA4-F24BE Sendo", "compressor": "GMCC KTN150D53UFZC3", "speed": "Inverter", "freon": "1400", "capacitor": "Mavjud emas", "motor": "WOLONG ZWB2710L 65W", "gasValve": "Ø6,35mm Ø12,7mm", "capillary": "(∅3*∅1,6*600) (∅3,2*∅1,8*900)", "valve4": "\"DSF-9 R410A\"", "valveCoil": "DXQ-1287 (123000800074)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": {"liquid": "6,35x0,65мм L=4000мм", "liquidArt": "323040200011", "gas": "12,7х0,71мм L=4000мм", "gasArt": "330000200061"}, "shassiArt": "323180500971", "pipeArt": "323150200116"}, {"no": 3, "type": "Ustunbop", "model": "STV1-F24BE-1 Iceberg", "compressor": "Lamda QXFS-M180zX170", "speed": "Inverter", "freon": "1400", "capacitor": "Mavjud emas", "motor": "WOLONG ZWB2710L 65W", "gasValve": "Ø6,35mm Ø12,7mm", "capillary": "∅2.8*∅1.8*700 ∅3*∅2*700", "valve4": "\"DSF-9 R410A\"", "valveCoil": "DXQ-1287 (123000800074)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": {"liquid": "6,35x0,65мм L=4000мм", "liquidArt": "323040200011", "gas": "12,7х0,71мм L=4000мм", "gasArt": "330000200061"}, "shassiArt": "323180500969", "pipeArt": "323000200985"}, {"no": 4, "type": "Ustunbop", "model": "STV2-F24BE-1 Sensei", "compressor": "Lamda QXFS-M180zX170", "speed": "Inverter", "freon": "1400", "capacitor": "Mavjud emas", "motor": "WOLONG ZWB2710L 65W", "gasValve": "Ø6,35mm Ø12,7mm", "capillary": "∅2.8*∅1.8*700 ∅3*∅2*700", "valve4": "\"DSF-9 R410A\"", "valveCoil": "DXQ-1287 (123000800074)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": {"liquid": "6,35x0,65мм L=4000мм", "liquidArt": "323040200011", "gas": "12,7х0,71мм L=4000мм", "gasArt": "330000200061"}, "shassiArt": "323180500969", "pipeArt": "323000200985"}, {"no": 5, "type": "Ustunbop", "model": "STA5-F24BE Avalon", "compressor": "GMCC KTM210D15UFZA3", "speed": "Inverter", "freon": "1500", "capacitor": "Mavjud emas", "motor": "WOLONG ZWB2710L 65W", "gasValve": "Ø6,35mm Ø12,7mm", "capillary": "(∅3*∅1,6*300) (∅3,3*∅1,9*500)", "valve4": "\"DSF-9 R410A\"", "valveCoil": "DXQ-1287 (123000800074)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": {"liquid": "6,35x0,65мм L=4000мм", "liquidArt": "323040200011", "gas": "12,7х0,71мм L=4000мм", "gasArt": "330000200061"}, "shassiArt": "323180500969", "pipeArt": "323150200086"}, {"no": 6, "type": "Ustunbop", "model": "STA1-F90BF Everest", "compressor": "GMCC ATQ580D66UNT", "speed": "Inverter", "freon": "6500", "capacitor": "Mavjud emas", "motor": "CW160B (qizil) CW160A (oq)", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "(∅2,6*∅1,3*800)", "valve4": "SHF-20 D-46G30 A83009", "valveCoil": "SHF-4-10L3 (123000802354)", "highOff": "4,2 MPa", "highOn": "3,3 MPa", "lowOff": "0,15 MPa", "lowOn": "0,05 MPa", "pipes": {"liquid": "9,52x0,65мм L=5000мм", "liquidArt": "323040200010", "gas": "19,05х0,89мм L=5000мм", "gasArt": "323040200009"}, "shassiArt": "323180501191", "pipeArt": "323150200169"}, {"no": 7, "type": "Ustunbop", "model": "STA2-F90BF Sendo", "compressor": "GMCC ATQ580D66UNT", "speed": "Inverter", "freon": "6500", "capacitor": "Mavjud emas", "motor": "CW160B (qizil) CW160A (oq)", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "(∅2,6*∅1,3*800)", "valve4": "SHF-20 D-46G30 A83009", "valveCoil": "SHF-4-10L3 (123000802354)", "highOff": "4,2 MPa", "highOn": "3,3 MPa", "lowOff": "0,15 MPa", "lowOn": "0,05 MPa", "pipes": {"liquid": "9,52x0,65мм L=5000мм", "liquidArt": "323040200010", "gas": "19,05х0,89мм L=5000мм", "gasArt": "323040200009"}, "shassiArt": "323180501191", "pipeArt": "323150200169"}, {"no": 8, "type": "Ustunbop", "model": "STA1-F24HE-2 Sherdor", "compressor": "GMCC PA301X3CS-4MUL", "speed": "On/off", "freon": "1600", "capacitor": "60/4 µF", "motor": "YDK86-6B 220/50", "gasValve": "Ø6,35mm Ø15,88mm", "capillary": "(∅3*∅2*700)", "valve4": "\"DSF-9 R410A\"", "valveCoil": "DXQ-1375 (121000800056)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": {"liquid": "6,35x0,65мм L=4000мм", "liquidArt": "323040200011", "gas": "15,88х0,89мм L=4000мм", "gasArt": "324040200013"}, "shassiArt": "324180500626", "pipeArt": "333000200091"}, {"no": 9, "type": "Ustunbop", "model": "STA1-F30HE-2 Sherdor", "compressor": "HIGHLY ASH286UV-C8DU", "speed": "On/off", "freon": "1800", "capacitor": "70/4 µF", "motor": "YDK86-6B 220/50", "gasValve": "Ø6,35mm Ø15,88mm", "capillary": "(∅3*∅2*700)", "valve4": "\"DSF-11J-R410A\"", "valveCoil": "DXQ-1375 (121000800056)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": {"liquid": "6,35x0,65мм L=5000мм", "liquidArt": "330000200157", "gas": "15,88х0,89мм L=5000мм", "gasArt": "330000200108"}, "shassiArt": "324180500627", "pipeArt": "323000200149"}, {"no": 10, "type": "Ustunbop", "model": "STA1-F48HF-2 Registon", "compressor": "PANASONIC C-SBP170H38A", "speed": "On/off", "freon": "3200", "capacitor": "- /3,5 µF", "motor": "YDK60-6H", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "(∅3,5*∅2,5*800) (∅3,5*∅2,5*600)", "valve4": "\"DSF-20Н-R410A\"", "valveCoil": "DXQ-1375 (121000800056)", "highOff": "4,8 MPa", "highOn": "3,7 MPa", "lowOff": "0,3 MPa", "lowOn": "0,15 MPa", "pipes": {"liquid": "9,52x0,65мм L=5000мм", "liquidArt": "323040200010", "gas": "19,05х0,89мм L=5000мм", "gasArt": "323040200009"}, "shassiArt": "324180500625", "pipeArt": "323150200089"}, {"no": 11, "type": "Ustunbop", "model": "STL1-F48HF Everest", "compressor": "HIGHLY ATE550SC3Q9RK", "speed": "On/off", "freon": "3100", "capacitor": "- /3,5 µF", "motor": "YDK60-6H", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "(∅3,6*∅2,6*700) (∅3,8*∅2,8*600)", "valve4": "\"DSF-20Н-R410A\"", "valveCoil": "DXQ-1375 (121000800056)", "highOff": "4,2 MPa", "highOn": "3,7 MPa", "lowOff": "0,3 MPa", "lowOn": "0,15 MPa", "pipes": {"liquid": "9,52x0,65мм L=5000мм", "liquidArt": "323040200010", "gas": "19,05х0,89мм L=5000мм", "gasArt": "323040200009"}, "shassiArt": "324180500624", "pipeArt": "323150200084"}, {"no": 12, "type": "Ustunbop", "model": "STA1-F60HF-2 Registon", "compressor": "PANASONIC C-SBP185H38A", "speed": "On/off", "freon": "3200", "capacitor": "- /3,5 µF", "motor": "YDK60-6H", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "(∅3,5*∅2,5*800) (∅3,8*∅2,8*800)", "valve4": "\"DSF-20Н-R410A\"", "valveCoil": "DXQ-1375 (121000800056)", "highOff": "4,8 MPa", "highOn": "3,7 Mpa", "lowOff": "0,3 MPa", "lowOn": "0,15 MPa", "pipes": {"liquid": "9,52x0,65мм L=5000мм", "liquidArt": "323040200010", "gas": "19,05х0,89мм L=5000мм", "gasArt": "323040200009"}, "shassiArt": "324180500625", "pipeArt": "323150200089"}, {"no": 13, "type": "Ustunbop", "model": "STL1-F60HF Everest", "compressor": "HIGHLY ATE650SC3Q9JK", "speed": "On/off", "freon": "3200", "capacitor": "- /3,5 µF", "motor": "YDK60-6H", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "(∅3,6*∅2,6*700) (∅3,8*∅2,8*600)", "valve4": "\"DSF-20Н-R410A\"", "valveCoil": "DXQ-1375 (121000800056)", "highOff": "4,5 MPa", "highOn": "3,7 MPa", "lowOff": "0,3 MPa", "lowOn": "0,15 MPa", "pipes": {"liquid": "9,52x0,65мм L=5000мм", "liquidArt": "323040200010", "gas": "19,05х0,89мм L=5000мм", "gasArt": "323040200009"}, "shassiArt": "324180500624", "pipeArt": "323150200084"}, {"no": 14, "type": "Ustunbop", "model": "STA2-F30HE-2(APC) Sensei", "compressor": "HIGHLY ASH286UV-C8DU", "speed": "On/off", "freon": "1800", "capacitor": "70/4 µF", "motor": "(YDK86-6B", "gasValve": "Ø6,35mm Ø15,88mm", "capillary": "(∅3*∅2*700)", "valve4": "\"DSF-11J-R410A\"", "valveCoil": "DXQ-1375 (121000800056)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": {"liquid": "6,35x0,65мм L=5000мм", "liquidArt": "330000200157", "gas": "15,88х0,89мм L=5000мм", "gasArt": "330000200108"}, "shassiArt": "324180500627", "pipeArt": "323000200149"}, {"no": 15, "type": "Ustunbop", "model": "STA2-F48HF-2(APC) Sensei", "compressor": "Panasonic (Sanyo) C-SBP170H38A", "speed": "On/off", "freon": "3200", "capacitor": "- /3,5 µF", "motor": "YDK60-6H", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "(∅3,5*∅2,5*800) (∅3,5*∅1,5*600)", "valve4": "\"DSF-20Н-R410A\"", "valveCoil": "DXQ-1375 (121000800056)", "highOff": "4,8MPa", "highOn": "3,7MPa", "lowOff": "0,15MPa", "lowOn": "0,3MPa", "pipes": {"liquid": "9,52x0,65мм L=5000мм", "liquidArt": "323040200010", "gas": "19,05х0,89мм L=5000мм", "gasArt": "323040200009"}, "shassiArt": "324180500625", "pipeArt": "323150200089"}, {"no": 16, "type": "Ustunbop", "model": "STA2-F60HF-2(APC) Sensei", "compressor": "Panasonic (Sanyo) C-SBP185H38A", "speed": "On/off", "freon": "3200", "capacitor": "- /3,5 µF", "motor": "YDK60-6H", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "(∅3,5*∅2,5*800) (∅3,5*∅1,5*600)", "valve4": "\"DSF-20Н-R410A\"", "valveCoil": "DXQ-1375 (121000800056)", "highOff": "4,8MPa", "highOn": "3,7MPa", "lowOff": "0,15MPa", "lowOn": "0,3MPa", "pipes": {"liquid": "9,52x0,65мм L=5000мм", "liquidArt": "323040200010", "gas": "19,05х0,89мм L=5000мм", "gasArt": "323040200009"}, "shassiArt": "324180500625", "pipeArt": "323150200089"}, {"no": 17, "type": "Ustunbop", "model": "STC1-F100HF Jayhun", "compressor": "Hitachi E604DH-59D2G", "speed": "On/off", "freon": "3200x2", "capacitor": "- /8 µF", "motor": "YDK-165-6P3-1", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "Yo'q", "valve4": "\"DSF-20Н-R410A\"", "valveCoil": "DXQ-1375 (121000800056)", "highOff": "4,5MPa", "highOn": "3,5MPa", "lowOff": "0,15MPa", "lowOn": "0,3MPa", "pipes": {"liquid": "9,52x0,65мм L=5000мм", "liquidArt": "330000200160", "gas": "19,05x0,89мм L=5000мм", "gasArt": "323000200158"}, "shassiArt": "123000501953", "pipeArt": "333000200087"}, {"no": 18, "type": "Ustunbop", "model": "STS1-F60BF Shaxrisabz", "compressor": "Sanyo (Panasonic) C-7RZ320H3DAF", "speed": "Inverter", "freon": "2600", "capacitor": "Mavjud emas", "motor": "WOLONG ZWB2710L65W", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "ERV", "valve4": "\"DSF-20H-R410A\"", "valveCoil": "DXQ1287 (132000800074)", "highOff": "4,2MPa", "highOn": "3,7MPa", "lowOff": "0,15MPa", "lowOn": "0,3MPa", "pipes": {"liquid": "9,52x0,65мм L=5000мм", "liquidArt": "323040200010", "gas": "15,88х01мм L=5000мм", "gasArt": "330000200108"}, "shassiArt": "323180501418", "pipeArt": "323150200372"}, {"no": 19, "type": "Ustunbop", "model": "STV1-F30BE Iceberg", "compressor": "GMCC FTz-SM240AHAD", "speed": "Inverter", "freon": "1700", "capacitor": "Mavjud emas", "motor": "WOLONG ZWB2710L 65W", "gasValve": "Ø6,35mm Ø12,7mm", "capillary": "∅2.8*∅2*900", "valve4": "DSF-9 R410A", "valveCoil": "DXQ1287 (132000800074)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": {"liquid": "6,35x0,65мм L=4000мм", "liquidArt": "323040200011", "gas": "12,7х0,71мм L=4000мм", "gasArt": "330000200061"}, "shassiArt": "324180500626", "pipeArt": "323150200328"}, {"no": 20, "type": "Ustunbop", "model": "STV2-F30BE Sensei", "compressor": "GMCC FTz-SM240AHAD", "speed": "Inverter", "freon": "1700", "capacitor": "Mavjud emas", "motor": "WOLONG ZWB2710L 65W", "gasValve": "Ø6,35mm Ø12,7mm", "capillary": "∅2.8*∅2*900", "valve4": "DSF-9 R410A", "valveCoil": "DXQ1287 (132000800074)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": {"liquid": "6,35x0,65мм L=4000мм", "liquidArt": "323040200011", "gas": "12,7х0,71мм L=4000мм", "gasArt": "330000200061"}, "shassiArt": "324180500626", "pipeArt": "323150200328"}, {"no": 21, "type": "Ustunbop", "model": "STS1-F24BE Shaxrisabz", "compressor": "Lamda QXFS-M180zX170", "speed": "Inverter", "freon": "1500", "capacitor": "Mavjud emas", "motor": "WOLONG ZWB2710L 65W", "gasValve": "Ø6,35mm Ø12,7mm", "capillary": "ERV", "valve4": "DSF-9 R410A", "valveCoil": "DXQ1287 (132000800074)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": {"liquid": "6,35x0,65мм L=4000мм", "liquidArt": "323040200011", "gas": "12,7х0,71мм L=4000мм", "gasArt": "330000200061"}, "shassiArt": "323180500969", "pipeArt": "323000200985"}, {"no": 22, "type": "Ustunbop", "model": "STS2-F24BE Sakura", "compressor": "Lamda QXFS-M180zX170", "speed": "Inverter", "freon": "1500", "capacitor": "Mavjud emas", "motor": "WOLONG ZWB2710L 65W", "gasValve": "Ø6,35mm Ø12,7mm", "capillary": "ERV", "valve4": "DSF-9 R410A", "valveCoil": "DXQ1287 (132000800074)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": {"liquid": "6,35x0,65мм L=4000мм", "liquidArt": "323040200011", "gas": "12,7х0,71мм L=4000мм", "gasArt": "330000200061"}, "shassiArt": "323180500969", "pipeArt": "323000200985"}, {"no": 23, "type": "Ustunbop", "model": "STS1-F48BF Shaxrisabz", "compressor": "SANYO C-7RZ320H3DAF", "speed": "Inverter", "freon": "2200", "capacitor": "Mavjud emas", "motor": "WOLONG ZWB2710L 65W", "gasValve": "Ø9,52 mm 15,88 mm", "capillary": "ЭРВ", "valve4": "DSF-20Н-R410A", "valveCoil": "DXQ1287 (123000800074)", "highOff": "4,2 MPa", "highOn": "3,7 MPa", "lowOff": "0,3 MPa", "lowOn": "0,15 MPa", "pipes": {"liquid": "9,52x0,65мм L=5000мм", "liquidArt": "323040200010", "gas": "15,88х01мм L=5000мм", "gasArt": "330000200108"}, "shassiArt": "323180501418", "pipeArt": "-"}, {"no": 24, "type": "Ustunbop", "model": "STS2-F48BF", "compressor": "SANYO C-7RZ320H3DAF", "speed": "Inverter", "freon": "2200", "capacitor": "Mavjud emas", "motor": "WOLONG ZWB2710L 65W", "gasValve": "Ø9,52 mm 15,88 mm", "capillary": "ЭРВ", "valve4": "DSF-20Н-R410A", "valveCoil": "DXQ1287 (123000800074)", "highOff": "4,2 MPa", "highOn": "3,7 MPa", "lowOff": "0,3 MPa", "lowOn": "0,15 MPa", "pipes": {"liquid": "9,52x0,65мм L=5000мм", "liquidArt": "323040200010", "gas": "15,88х01мм L=5000мм", "gasArt": "330000200108"}, "shassiArt": "323180501418", "pipeArt": "-"}, {"no": 25, "type": "Ustunbop", "model": "STA2-F48BF Registon", "compressor": "GMCC KTF310D43UMT", "speed": "Inverter", "freon": "3200", "capacitor": "Mavjud emas", "motor": "D-65-10N", "gasValve": "Ø9,52mm Ø15,88mm", "capillary": "(Ф2.5*800) (Ф2.5*400)", "valve4": "SHF(G)-13Q-45U-S1-P", "valveCoil": "XQA3700K GL", "highOff": "4,5 MPa", "highOn": "3,3 MPa", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": {"liquid": "9,52x0,65мм L=5000мм", "liquidArt": "323040200010", "gas": "15,88х0,89мм L=5000мм", "gasArt": "330000200108"}, "shassiArt": "323180501418", "pipeArt": "323150200400"}, {"no": 26, "type": "Ustunbop", "model": "STA6-F24BE(Artel)", "compressor": "GMCC KTN150D53UFZC3", "speed": "Inverter", "freon": "1400", "capacitor": "Mavjud emas", "motor": "WOLONG ZWB2710L 65W", "gasValve": "Ø6,35mm Ø12,7mm", "capillary": "(∅3*∅1,6*600) (∅3,2*∅1,8*900)", "valve4": "\"DSF-9 R410A\"", "valveCoil": "DXQ-1287 (123000800074)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": {"liquid": "6,35x0,65мм L=4000мм", "liquidArt": "323040200011", "gas": "12,7х0,71мм L=4000мм", "gasArt": "330000200061"}, "shassiArt": "323180500971", "pipeArt": "323150200116"}, {"no": 27, "type": "Kanal turidagi", "model": "STT1-F12HE", "compressor": "HIGHLY ASG130GV-A7AT", "speed": "On/off", "freon": "650", "capacitor": "40/3 µF", "motor": "YYK36-6-231L", "gasValve": "Ø6,35mm Ø9,52mm", "capillary": "(∅1,4*800)", "valve4": "\"SHIF-4 R110\"", "valveCoil": "SHF-4-10L3 (123000802354)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": null, "shassiArt": "", "pipeArt": "-"}, {"no": 28, "type": "Kanal turidagi", "model": "STS1-F18HE-1", "compressor": "HIGHLY ASH232GV-C8DQ", "speed": "On/off", "freon": "1300", "capacitor": "60/3 µF", "motor": "YDK36-6B", "gasValve": "Ø6,35mm Ø12,7mm", "capillary": "(∅1,6*300)", "valve4": "\"DSF-9-R410A\"", "valveCoil": "DXQ-1375 (121000800056)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": null, "shassiArt": "221000500405", "pipeArt": "-"}, {"no": 29, "type": "Kanal turidagi", "model": "STA2-F32BE", "compressor": "GMCC KTM240D43UKUA2", "speed": "Inverter", "freon": "2400", "capacitor": "Mavjud emas", "motor": "Wolong 65w (DC", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "(∅3,5*∅2*450) (∅3,5*∅2*700)", "valve4": "\"DSF-9 R410A\"", "valveCoil": "DXQ-1287 (123000800074)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": null, "shassiArt": "123000500502", "pipeArt": "323150200106"}, {"no": 30, "type": "Kanal turidagi", "model": "STH1-F36HF", "compressor": "HIGHLY ATH420UC-C9EU1", "speed": "On/off", "freon": "2900", "capacitor": "- /6 µF", "motor": "Y6S696D511", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "(∅3*∅2,2*550) (∅2,8*∅2*450)", "valve4": "\"DSF-11J-R410A\"", "valveCoil": "DXQ-1287 (123000800074)", "highOff": "4,8MPa", "highOn": "3,6MPa", "lowOff": "0,3 MPa", "lowOn": "0,15 MPa", "pipes": null, "shassiArt": "223000500087", "pipeArt": "333000200088"}, {"no": 31, "type": "Kanal turidagi", "model": "STA3-F60HF-1", "compressor": "HIGHLY ATE650SC3Q9JK", "speed": "On/off", "freon": "3400", "capacitor": "- /3,5 µF", "motor": "YDK60-6H", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "(∅2,4*650)", "valve4": "DSF-20Н-R410A", "valveCoil": "DXQ-1375 (121000800056)", "highOff": "4,5MPa", "highOn": "3,7MPa", "lowOff": "0,3 MPa", "lowOn": "0,15 MPa", "pipes": null, "shassiArt": "324180500624", "pipeArt": "323150200084"}, {"no": 32, "type": "Kanal turidagi", "model": "STH1-F60HF-1", "compressor": "HIGHLY ATE650SC3Q9JK", "speed": "On/off", "freon": "3600", "capacitor": "2ta 4 µF/ 8 µF", "motor": "YDK65-6", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "(∅3,6*∅2,6*700) (∅3,8*∅2,8*600)", "valve4": "DSF-20Н-R410A", "valveCoil": "DXQ-1287 (123000800074)", "highOff": "4,5 MPa", "highOn": "3,7 MPa", "lowOff": "0,3 MPa", "lowOn": "0,15 MPa", "pipes": null, "shassiArt": "324180500624", "pipeArt": "323150200084"}, {"no": 33, "type": "Kanal turidagi", "model": "STA1-F100BF", "compressor": "GMCC ATQ580D66UNT", "speed": "Inverter", "freon": "6500", "capacitor": "Mavjud emas", "motor": "CW160B (qizil) CW160A (oq)", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "(∅2,6*∅1,3*800)", "valve4": "SHF-20 D-46G30 A83009", "valveCoil": "SHF-4-10L3 (123000802354)", "highOff": "4,2MPa", "highOn": "3,3MPa", "lowOff": "0,05MPa", "lowOn": "0,15MPa", "pipes": null, "shassiArt": "323180501191", "pipeArt": "323150200169"}, {"no": 34, "type": "Kanal turidagi", "model": "STT1-T100HF", "compressor": "HIGHLY ATE650SC3Q9JK", "speed": "On/off", "freon": "6000", "capacitor": "- /25 µF", "motor": "YDK-400-4C", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "∅3.8×∅2.8×500(2T15)", "valve4": "DSF-20Н-R410A", "valveCoil": "DXQ-2425(3.5M) (123000802774)", "highOff": "4,5 MPa", "highOn": "3,7 MPa", "lowOff": "0,3 MPa", "lowOn": "0,15 MPa", "pipes": null, "shassiArt": "323180501327", "pipeArt": "323320500053"}, {"no": 35, "type": "Kassetali", "model": "STS1-F18HE-1", "compressor": "HIGHLY ASH232GV-C8DQ", "speed": "On/off", "freon": "1300", "capacitor": "60/3 µF", "motor": "YDK36-6B YDKL-31A-6S", "gasValve": "Ø6,35mm Ø12,7mm", "capillary": "(∅1,6*300)", "valve4": "\"DSF-9-R410A\"", "valveCoil": "DXQ-1375 (121000800056)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "Yo'q", "lowOn": "Yo'q", "pipes": null, "shassiArt": "221000500405", "pipeArt": "-"}, {"no": 36, "type": "Kassetali", "model": "STH1-F24HE-1", "compressor": "HIGHLY ASH280MV-C8DU", "speed": "On/off", "freon": "1600", "capacitor": "50/4 µF 2ta", "motor": "YDK-65W-6", "gasValve": "Ø9,52mm Ø15,88mm", "capillary": "(∅2*∅3*600) (∅2*∅3*600)", "valve4": "\"DSF-11J-R410A\"", "valveCoil": "DXQ-1287 (123000800074)", "highOff": "4,5MPa", "highOn": "3,7MPa", "lowOff": "0,15MPa", "lowOn": "0,30MPa", "pipes": null, "shassiArt": "324180500627", "pipeArt": "323150200113"}, {"no": 37, "type": "Kassetali", "model": "STH1-F36HF", "compressor": "HIGHLY ATH420UC-C9EU1", "speed": "On/off", "freon": "2900", "capacitor": "- /6 µF", "motor": "Y6S696D511", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "(∅2,2*550) (∅2*450)", "valve4": "\"DSF-11J-R410A\"", "valveCoil": "DXQ-1287 (123000800074)", "highOff": "4,8MPa", "highOn": "3,6MPa", "lowOff": "0,15MPa", "lowOn": "0,30MPa", "pipes": null, "shassiArt": "223000500087", "pipeArt": "333000200088"}, {"no": 38, "type": "Kassetali", "model": "STH1-F48HF-1", "compressor": "HIGHLY ATE550SC3Q9RK", "speed": "On/off", "freon": "3100", "capacitor": "2ta 4 µF/ 8 µF", "motor": "YDK65-6", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "(∅3,6*∅2,6*700) (∅3,8*∅2,8*600)", "valve4": "\"DSF-20-R410A\"", "valveCoil": "DXQ-1287 (123000800074)", "highOff": "4,2MPa", "highOn": "3,7MPa", "lowOff": "0,15MPa", "lowOn": "0,30MPa", "pipes": null, "shassiArt": "324180500624", "pipeArt": "323150200084"}, {"no": 39, "type": "Kassetali", "model": "STH1-F60HF-1", "compressor": "HIGHLY ATE650SC3Q9JK", "speed": "On/off", "freon": "3600", "capacitor": "2ta 4 µF/ 8 µF", "motor": "YDK65-6", "gasValve": "Ø9,52mm Ø19,05mm", "capillary": "(∅3,6*∅2,6*700) (∅3,8*∅2,8*600)", "valve4": "DSF-20Н-R410A", "valveCoil": "DXQ-1287 (123000800074)", "highOff": "4.5MPa", "highOn": "3.7MPa", "lowOff": "0.3MPa", "lowOn": "0.15MPa", "pipes": null, "shassiArt": "324180500624", "pipeArt": "323150200084"}, {"no": 40, "type": "Multi-split", "model": "MTA1-F18BE-1", "compressor": "GMCC ASM135D23UFZ", "speed": "Inverter", "freon": "1350", "capacitor": "Mavjud emas", "motor": "DС310V RO-310-40B-1", "gasValve": "Ø6,35mm Ø9,52mm", "capillary": "ERVx2", "valve4": "\"DSF-9 R410A\"", "valveCoil": "DXQ-1287 (123000800074)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "0,05MPa", "lowOn": "0,15MPa", "pipes": null, "shassiArt": "123000502237", "pipeArt": "323060200567"}, {"no": 41, "type": "Multi-split", "model": "MTA1-F27BE-1", "compressor": "GMCC ATM240D57UKP", "speed": "Inverter", "freon": "1400", "capacitor": "Mavjud emas", "motor": "D-65-8 310VDC", "gasValve": "Ø6,35mm Ø9,52mm", "capillary": "ERVx3", "valve4": "\"DSF-9 R410A\"", "valveCoil": "DXQ-1287 (123000800074)", "highOff": "Yo'q", "highOn": "Yo'q", "lowOff": "0,05MPa", "lowOn": "0,15MPa", "pipes": null, "shassiArt": "123000502229", "pipeArt": "323000201060"}, {"no": 42, "type": "Multi-split", "model": "MTA1-F36BE", "compressor": "GMCC KTF310D43UMT", "speed": "Inverter", "freon": "3100", "capacitor": "Mavjud emas", "motor": "ZWB2710L07AL", "gasValve": "Ø6,35mm Ø9,52mm", "capillary": "ERVx4", "valve4": "DSF11B-R410A", "valveCoil": "DXQ-1287 (123000800074)", "highOff": "4,2MPa", "highOn": "3,3MPa", "lowOff": "0,1MPa", "lowOn": "0,3MPa", "pipes": null, "shassiArt": "123000501891", "pipeArt": "-"}, {"no": 43, "type": "Multi-split", "model": "MTA2-F42BE", "compressor": "GMCC KTF310D43UMT", "speed": "Inverter", "freon": "3600", "capacitor": "Mavjud emas", "motor": "ZWB2710L07AL", "gasValve": "Ø6,35mm Ø9,52mm", "capillary": "ERVx5", "valve4": "DSF11B-R410A", "valveCoil": "DXQ-1287 (123000800074)", "highOff": "4,2MPa", "highOn": "3,3MPa", "lowOff": "0,1MPa", "lowOn": "0,3MPa", "pipes": null, "shassiArt": "123000501891", "pipeArt": "-"}, {"no": 44, "type": "Issiqlik nasosi", "model": "TMP1-F08BED TMP2-F08BED", "compressor": "Panasonic 9RD138ZBA2J (R32)", "speed": "Inverter", "freon": "1300", "capacitor": "Mavjud emas", "motor": "RD80HB 80W, 850rpm,DC 310V", "gasValve": "Mavjud emas", "capillary": "ERVx2", "valve4": "SHF-7H-34U-P C21405", "valveCoil": "Komplektda keladi", "highOff": "4,4MPa", "highOn": "3,8MPa", "lowOff": "0,05MPa", "lowOn": "0,15MPa", "pipes": null, "shassiArt": "323180501350", "pipeArt": "-"}, {"no": 45, "type": "Issiqlik nasosi", "model": "TMP1-F12BED TMP2-F12BED", "compressor": "Panasonic 9RD220ZAA2J (R32)", "speed": "Inverter", "freon": "1700", "capacitor": "Mavjud emas", "motor": "RD150HA 150W, 850rpm 8P DC310V", "gasValve": "Mavjud emas", "capillary": "ERVx2", "valve4": "SHF-9H-35U-P C31642", "valveCoil": "Komplektda keladi", "highOff": "4,4MPa", "highOn": "3,8MPa", "lowOff": "0,05MPa", "lowOn": "0,15MPa", "pipes": null, "shassiArt": "323180501404", "pipeArt": "-"}, {"no": 46, "type": "Issiqlik nasosi", "model": "TMP1-F18BED TMP2-F18BED", "compressor": "Panasonic 9VD420ZAA2J (R32)", "speed": "Inverter", "freon": "2700", "capacitor": "Mavjud emas", "motor": "RD150HA 150W, 850rpm 8P DC310V", "gasValve": "Mavjud emas", "capillary": "ERVx2", "valve4": "SHF-20D-46-04 C50904", "valveCoil": "Komplektda keladi", "highOff": "4,4MPa", "highOn": "3,8MPa", "lowOff": "0,05MPa", "lowOn": "0,15MPa", "pipes": null, "shassiArt": "323180501387", "pipeArt": "-"}, {"no": 47, "type": "Issiqlik nasosi", "model": "TMP1-F22BED TMP2-F22BED", "compressor": "Panasonic 9VD420ZAA2J (R32)", "speed": "Inverter", "freon": "3200", "capacitor": "Mavjud emas", "motor": "RD150HA 150W, 850rpm 8P DC310V", "gasValve": "Mavjud emas", "capillary": "ERVx2", "valve4": "SHF-20D-46-04 C50904", "valveCoil": "Komplektda keladi", "highOff": "4,4MPa", "highOn": "3,8MPa", "lowOff": "0,05MPa", "lowOn": "0,15MPa", "pipes": null, "shassiArt": "323180501387", "pipeArt": "-"}, {"no": 48, "type": "Issiqlik nasosi", "model": "TMP1-F28BFD TMP2-F28BFD", "compressor": "Panasonic 9VD550ZCA2J (R32)", "speed": "Inverter", "freon": "4000", "capacitor": "Mavjud emas", "motor": "RD200HB 200W, 800rpm 8P DC 310V", "gasValve": "Mavjud emas", "capillary": "ERVx2", "valve4": "SHF-20D-46-04 C50904", "valveCoil": "Komplektda keladi", "highOff": "4,4MPa", "highOn": "3,8MPa", "lowOff": "0,05MPa", "lowOn": "0,15MPa", "pipes": null, "shassiArt": "323180501371", "pipeArt": "-"}, {"no": 49, "type": "Issiqlik nasosi", "model": "TMP1-F34BFD TMP2-F34BFD", "compressor": "Panasonic 9VD650ZCA2J (R32)", "speed": "Inverter", "freon": "4600", "capacitor": "Mavjud emas", "motor": "RD200HB 200W, 800rpm 8P DC 310V", "gasValve": "Mavjud emas", "capillary": "ERVx2", "valve4": "SHF-35B-67-06 C22707", "valveCoil": "Komplektda keladi", "highOff": "4,4MPa", "highOn": "3,8MPa", "lowOff": "0,05MPa", "lowOn": "0,15MPa", "pipes": null, "shassiArt": "323180501371", "pipeArt": "-"}];
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const val = (v) => (v && v !== '-' && v !== 'Mavjud emas') ? v : '—';
+
+let state = { type: 'Hammasi', speed: 'all', q: '' };
+
+// Summary numbers
+const inv = DATA.filter(d => d.speed === 'Inverter').length;
+const onoff = DATA.length - inv;
+const types = [...new Set(DATA.map(d => d.type))];
+$('#tally').innerHTML = [
+  [DATA.length, 'model'], [types.length, 'turi'], [inv, 'inverter'], [onoff, 'on/off']
+].map(([n, l]) => `<div><strong>${n}</strong><span>${l}</span></div>`).join('');
+$('#split').innerHTML =
+  `<i style="width:${(inv / DATA.length * 100).toFixed(1)}%;background:var(--inv)"></i>` +
+  `<i style="width:${(onoff / DATA.length * 100).toFixed(1)}%;background:var(--onoff)"></i>`;
+
+// Type chips
+const chipBox = $('#chips');
+['Hammasi', ...types].forEach(t => {
+  const b = document.createElement('button');
+  b.className = 'chip';
+  b.textContent = t;
+  b.setAttribute('aria-pressed', t === state.type ? 'true' : 'false');
+  b.addEventListener('click', () => { state.type = t; sync(); render(); });
+  chipBox.appendChild(b);
+});
+
+// Speed segmented control
+$('#seg').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.speed = b.dataset.v === 'all' ? 'all' : b.dataset.v;
+  sync(); render();
+});
+
+$('#q').addEventListener('input', (e) => { state.q = e.target.value.trim().toLowerCase(); render(); });
+
+function sync() {
+  chipBox.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c.textContent === state.type ? 'true' : 'false'));
+  $('#seg').querySelectorAll('button').forEach(b => {
+    const on = (b.dataset.v === 'all' && state.speed === 'all') || b.dataset.v === state.speed;
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+}
+
+function filtered() {
+  return DATA.filter(d =>
+    (state.type === 'Hammasi' || d.type === state.type) &&
+    (state.speed === 'all' || d.speed === state.speed) &&
+    (!state.q || (d.model + ' ' + d.compressor + ' ' + d.type).toLowerCase().includes(state.q))
+  );
+}
+
+function render() {
+  const list = filtered();
+  $('#meta').textContent = `${list.length} ta model ko'rsatilmoqda`;
+  const grid = $('#grid');
+  if (!list.length) { grid.innerHTML = `<p class="empty">Hech narsa topilmadi. Qidiruvni yoki filtrni o'zgartiring.</p>`; return; }
+  grid.innerHTML = list.map((d, i) => `
+    <article class="card ${d.speed === 'Inverter' ? 'inv' : ''}" tabindex="0" data-idx="${DATA.indexOf(d)}" aria-label="${esc(d.model)} batafsil">
+      <div class="no"><span>№ ${String(d.no).padStart(2, '0')}</span><span class="tag ${d.speed === 'Inverter' ? 'inv' : ''}">${d.speed}</span></div>
+      <h3>${esc(d.model)}</h3>
+      <div class="comp">${esc(d.type)} · ${esc(d.compressor || 'kompressor ko\'rsatilmagan')}</div>
+      <div class="nums">
+        <div>Freon<strong>${esc(val(d.freon))}</strong></div>
+        <div>Yuqori bosim<strong>${esc(val(d.highOff))}</strong></div>
+        <div>Past bosim<strong>${esc(val(d.lowOff))}</strong></div>
+      </div>
+    </article>`).join('');
+}
+
+// Detail sheet
+function row(label, value) { return `<div><dt>${esc(label)}</dt><dd>${esc(val(value))}</dd></div>`; }
+function openDetail(idx) {
+  const d = DATA[idx];
+  const p = d.pipes || {};
+  $('#sheet').innerHTML = `
+    <header>
+      <div>
+        <h2 id="dlgTitle">${esc(d.model)}</h2>
+        <p class="sub">${esc(d.type)} · ${d.speed === 'Inverter' ? 'Inverter' : 'On/off'} · № ${String(d.no).padStart(2, '0')}</p>
+      </div>
+      <button class="close" id="closeBtn">Yopish</button>
+    </header>
+
+    <div class="group"><h4>KOMPRESSOR</h4>
+      <dl>
+        ${row('Model', d.compressor)}
+        ${row('Ishlash turi', d.speed)}
+        ${row('Motor', d.motor)}
+        ${row('Kondensator sig\'imi', d.capacitor)}
+      </dl>
+    </div>
+
+    <div class="group"><h4>FREON VA KLAPANLAR</h4>
+      <dl>
+        ${row('Freon (g)', d.freon)}
+        ${row('Gaz kran gayka', d.gasValve)}
+        ${row('Kapilyar trubka (mm)', d.capillary)}
+        ${row('4 yo\'lli klapan', d.valve4)}
+        ${row('Klapan katushkasi', d.valveCoil)}
+      </dl>
+    </div>
+
+    <div class="group"><h4>BOSIM RELELARI</h4>
+      <dl>
+        ${row('Yuqori bosim: o\'chirish', d.highOff)}
+        ${row('Yuqori bosim: yoqish', d.highOn)}
+        ${row('Past bosim: o\'chirish', d.lowOff)}
+        ${row('Past bosim: yoqish', d.lowOn)}
+      </dl>
+    </div>
+
+    <div class="group"><h4>TRUBKA VA ARTIKULLAR</h4>
+      <dl>
+        ${row('Qismlararo suyuqlik trubkasi', p.liquid)}
+        ${row('Suyuqlik trubkasi artikuli', p.liquidArt)}
+        ${row('Qismlararo gaz trubkasi', p.gas)}
+        ${row('Gaz trubkasi artikuli', p.gasArt)}
+        ${row('Shassi artikuli', d.shassiArt)}
+        ${row('Trubka yig\'ma artikuli', d.pipeArt)}
+      </dl>
+    </div>`;
+  $('#closeBtn').addEventListener('click', () => $('#dlg').close());
+  $('#dlg').showModal();
+}
+
+$('#grid').addEventListener('click', (e) => {
+  const c = e.target.closest('.card'); if (c) openDetail(+c.dataset.idx);
+});
+$('#grid').addEventListener('keydown', (e) => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('card')) { e.preventDefault(); openDetail(+e.target.dataset.idx); }
+});
+$('#dlg').addEventListener('click', (e) => { if (e.target.id === 'dlg') e.target.close(); });
+
+render();
+</script>
+</body>
+</html>
