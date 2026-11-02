@@ -1,2 +1,2 @@
-# Narujni-
+# Narujni
 Ishlab chiqarish
